@@ -94,8 +94,12 @@ function create_grade_total($DB,$courseid){
 
 //$course
 
+if (!$course = $DB->get_record('course', array('id' => $courseid))) {
+		print_error('invalidcourseid');
+	}
+
 if ($gitem = $DB->get_record('grade_items', array('courseid' => $courseid))) {
-		print_error('course exist '.$courseid);
+		print_error('item total exist for course \''.$course->fullname.'\'');
 	}else 
 
 create_grade_total($DB,$courseid);
