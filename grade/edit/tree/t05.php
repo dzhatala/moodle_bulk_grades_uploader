@@ -56,9 +56,14 @@ $courseFullNameCol=3; //'D'
 $courseLetterOffset=2;
 $coursePointOffset=1;
 
+$course_prefix ="22_23";
 for ($c=1;$c<=$courseNumber;$c++){
 	
 	
+	
+	//1. get course code
+	
+	//2. cek item exist ? if not ... regrade ..
 	
 	$coord=getNameFromNumber($courseFullNameCol).$courseFullNameRow;
 	echo $coord."<br>";		
