@@ -10,9 +10,9 @@
 require_once '../config.php';
  
 require '/var/www/composer/vendor/autoload.php';//absolute values of composer installation...
-require './../grade/edit/tree/i01_03.php';
+require './../grade/edit/tree/total_creator.php';
 
-die;
+// die;
 
 //https://stackoverflow.com/questions/3302857/algorithm-to-get-the-excel-like-column-name-of-a-number
 function getNameFromNumber($num) {
@@ -79,7 +79,9 @@ for ($c=1;$c<=$courseNumber;$c++){
 	$nim_col='C';
 	$nim_start=10;
 	$nim_end=96;
-
+	
+	
+	/*
 	for ($nim=$nim_start;  $nim<=$nim_end; $nim++){
 			$coord=$nim_col.$nim;
 			// echo $nim.": getting ".$coord." => ";
@@ -100,6 +102,8 @@ for ($c=1;$c<=$courseNumber;$c++){
 			 }
 			 
 	}
+	
+	*/
 
 	$courseFullNameCol+=$courseInterval;
 }	
