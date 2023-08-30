@@ -5,9 +5,14 @@
 </head>
 
 <H1> Grades Uploader </H1>
-<?php 
-require '/var/www/composer/vendor/autoload.php';//absolute values of composer installation...
+<?php
 
+require_once '../config.php';
+ 
+require '/var/www/composer/vendor/autoload.php';//absolute values of composer installation...
+require './../grade/edit/tree/i01_03.php';
+
+die;
 
 //https://stackoverflow.com/questions/3302857/algorithm-to-get-the-excel-like-column-name-of-a-number
 function getNameFromNumber($num) {
