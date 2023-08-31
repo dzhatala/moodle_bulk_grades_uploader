@@ -204,10 +204,10 @@ for ($c=1;$c<=$courseNumber;$c++){
 			 //getting userid
 			 $user=false;
 			if (!$user = $DB->get_record('user', array('username' => trim($NIM->getValue()) ))) {
-				 echo " <font color=\"red\">NIM ". $NIM. "Not FOUND</font><br>";
+				 echo " <font color=\"red\">".$nim.". NIM ". $NIM. "Not FOUND</font><br>";
 				die ();
 			}else {
-				echo " <font color=\"green\">userid:".$user->id." NIM ". $user->username. " FOUND</font><br>";
+				echo " <font color=\"green\">".$nim.". userid:".$user->id." NIM ". $user->username. " FOUND</font><br>";
 				
 			}
 			 
