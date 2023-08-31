@@ -10,6 +10,7 @@
 require_once '../config.php';
 require_once($CFG->libdir . '/gradelib.php'); //
 
+require_login();
  
 require '/var/www/composer/vendor/autoload.php';//absolute values of composer installation...
 require './../grade/edit/tree/total_creator.php';
@@ -76,8 +77,6 @@ foreach ($sheetNames as $sheetIndex => $sheetName) {
 
 $spreadsheet->setActiveSheetIndex(0);
 
-$courseNumber=11;
-// $courseNumber=2;
 $courseInterval=3; //column used by each course
 $courseFullNameRow=8;
 $courseShortNameRow=$courseFullNameRow-1	;
@@ -87,14 +86,18 @@ $coursePointOffset=1;
 
 
 
-$nim_col='C';
-$nim_start=10;
-$nim_end=96;
 
 // $course_prefix ="22_23"; //moodle course shortname prefix
 $course_prefix =""; //moodle course shortname prefix
 
 
+$courseNumber=11;
+$courseNumber=1; //column number in excel contain courses
+$nim_col='C';   // NIM column
+$nim_start=10; //excel row number start looking NIM
+$nim_end=96;
+$nim_end=11; //excel row number end looking NIM
+$currentuser='2';
 for ($c=1;$c<=$courseNumber;$c++){
 	
 	
@@ -116,37 +119,60 @@ for ($c=1;$c<=$courseNumber;$c++){
 	echo "<BR>\n";
 	echo "<br>in Excel : Course ".$shortName." ".$fullName;
 
+	$course=false;
 	if (!$course = $DB->get_record('course', array('shortname' => $shortName))) {
 		print_error('invalidcourseshort code'. $shortName);
 	}else {
 		echo "In Moodle: Course id: ".$course->id." ".$course->fullname;
 	}
+	require_login($course);
 	
 	echo "<br>";
 	$max_tries=1;
+	$gitem=false;
 	for ($try=1;$try<=$max_tries+1;$try++){
 		if ($gitem = $DB->get_record('grade_items', array('courseid' => $course->id))) {
 			echo(' item TOTAL exist ='.$gitem->id. ", grade max =".$gitem->grademax);
-			
+			break;
 		}else {
 			echo(' item TOTAL NOT exist ');
 			
 			if($try<=$max_tries){
+				echo(' try creating ... ');
 				create_grade_total($DB,$course->id);
 				continue;
 			}else{
 				die ("CAN NOT create TOTAL grade ");
 			}
 		}
-		if($gitem->grademax<100){
-			echo " <font color=\"red\"> => course total 'grademax' not 100=>".$giteim->grademax."</font><br>";
-			die;
-		}
 		
 	}
 
+	$max_tries=1;
+	for ($try=1;$try<=$max_tries+1;$try++){
+
+		if($gitem->grademax<100){
+				echo " <br><font color=\"red\"> => course total 'grademax' not 100=>".$gitem->grademax."</font><br>";
+			if($try<=$max_tries){
+				echo(" try set items id=".$gitem->id." to 100 ... ");
+				$DB->update_record('grade_items', array('id' => $gitem->id, 'grademax' => 100));
+				continue;
+			}else{
+				die ("CAN NOT set 100 to grademax ");
+			}
+		} else{
+				echo " <br><font color=\"green\"> => course total 'grademax' ALREADY 100=>".$gitem->grademax."</font><br>";
+				break;
+			
+		}
+		
+
+		
+	}
+	
 	//create course context first ... 
 	$context = context_course::instance($course->id);
+	require_capability('moodle/grade:edit', $context);
 	if (!$context ){
 		die ("error getting course context");
 	}
@@ -171,9 +197,13 @@ for ($c=1;$c<=$courseNumber;$c++){
 			 if($NIM==false) die ("error get NIM at".$coord);
 
 			 //getting userid
+			 $user=false;
 			if (!$user = $DB->get_record('user', array('username' => trim($NIM->getValue()) ))) {
 				 echo " <font color=\"red\">NIM ". $NIM. "Not FOUND</font><br>";
 				die ();
+			}else {
+				echo " <font color=\"green\">userid:".$user->id." NIM ". $user->username. " FOUND</font><br>";
+				
 			}
 			 
 			 $point_col=$courseFullNameCol+$coursePointOffset;
@@ -187,7 +217,7 @@ for ($c=1;$c<=$courseNumber;$c++){
 			 if($point==false) die ("error get course name");
 			 $letter=$spreadsheet->getActiveSheet()->getCell($coord); // reads D12 cell from second sheet
 			 $fullName=$user->firstname." ". $user->lastname;
-			 echo $NIM." ".$fullName." ".$point." ".$letter."<BR>";
+			 echo "XLS: ".$NIM." ".$fullName." ".$point." ".$letter."<BR>";
 			 $point=floatval($point->getValue());
 			 
 			 
@@ -202,19 +232,69 @@ for ($c=1;$c<=$courseNumber;$c++){
 				 echo " <font color=\"red\"> => point CORRECTED to ".$point."</font><br>";
 				 
 			 } else {
-				 echo " <font color=\"green\"> => LETTER already SAME</font><br>";
+				 echo " <font color=\"green\"> => LETTER already SAME</font>";
 				 
 			 }
-			 // $itemmodule, $iteminstance,$userid_or_ids=null;
-			 // $stgrades=grade_get_grades($course->id, "course", null, null, $user->id);
-			 // if(!$stgrades){
-				 // echo " <font color=\"red\"> => COURSE TOTAL NOT GRADED</font><br>";
-					// die;
-			 // }
-			 // var_dump($stgrades);
-			 // function grade_update($source, $courseid, $itemtype, $itemmodule, $iteminstance, $itemnumber, $grades=NULL, $itemdetails=NULL)
-			 // grade_update("course", $course->id, "course", null, null, null, $grades=NULL, null);
-			die;
+
+			//finding existing grades
+			$max_tries=1;
+			for ($try=1;$try<=$max_tries+1;$try++){
+				$grade=$DB->get_record("grade_grades",array("itemid"=>$gitem->id,"userid"=>$user->id));
+				if(!$grade){
+					// die;					
+					if($try<=$max_tries){
+						echo " <br><font color=\"black\"> grade NOT exist try inserting ... </font><br>";
+						$gar=array("itemid"=>$gitem->id,"userid"=>$user->id
+								   ,"rawgrademax"=>100.0, "rowgrademin"=>0.0
+								   ,"usermodified"=>$currentuser,  "finalgrade"=>$point
+								   ,"overridden"=>1693481396,"timemodified"=>1693481396
+							);
+						$DB->insert_record('grade_grades', $gar);
+						continue;
+					}else{
+						echo " <br><font color=\"red\"> can NOT insert grade </font>";
+						die ;
+					}
+				} else{
+						echo "<br><font color=\"green\"> grade found=>".$grade->finalgrade." </font>";
+						
+						// var_dump($grade); die;
+						break;
+					
+				}
+			}
+			
+			//TODO check grade point equality .. 
+			$max_tries=1;
+			for ($try=1;$try<=$max_tries+1;$try++){
+				$grade=$DB->get_record("grade_grades",
+										array("itemid"=>$gitem->id
+												,"userid"=>$user->id));
+												
+				if(!(floatval($grade->finalgrade)-floatval($point)<=1)){ //the difference more than one point ?
+					
+					// echo "grade not the same".$grade->finalgrade."!=".$point; die;					
+					if($try<=$max_tries){
+						echo " <br><font color=\"black\"> grade NOT the same".$grade->finalgrade."!=".$point." </font>";
+						echo " <br><font color=\"black\"> updating </font>";
+						$gar=array("id"=>$grade->id
+						           ,"itemid"=>$gitem->id,"userid"=>$user->id
+								   ,"rawgrademax"=>100.0, "rowgrademin"=>0.0
+								   ,"usermodified"=>$currentuser,  "finalgrade"=>$point
+								   ,"overridden"=>1693481396,"timemodified"=>1693481396
+							);
+						$DB->update_record('grade_grades', $gar);
+						continue;
+					}else{
+						echo " <br><font color=\"red\"> can NOT update grade </font><br>";
+						die ;
+					}
+				} else{
+						echo " <br><font color=\"green\"> grade already the same </font><br>";
+						break;
+					
+				}
+			}
 			 
 	} //eo. for ($nim=$nim_start;  $nim<=$nim_end; $nim++){
 	
