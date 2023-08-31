@@ -54,6 +54,7 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 $inputFileType = 'Xls';
 $inputFileName='/var/www/composer/sem2grades.xls';
+$inputFileName='/var/www/composer/testgrades.xls';
 
 // Create a new Reader of the type defined in $inputFileType
 $reader = IOFactory::createReader($inputFileType);
@@ -90,7 +91,8 @@ $nim_col='C';
 $nim_start=10;
 $nim_end=96;
 
-$course_prefix ="22_23"; //moodle course shortname prefix
+// $course_prefix ="22_23"; //moodle course shortname prefix
+$course_prefix =""; //moodle course shortname prefix
 
 
 for ($c=1;$c<=$courseNumber;$c++){
@@ -121,12 +123,26 @@ for ($c=1;$c<=$courseNumber;$c++){
 	}
 	
 	echo "<br>";
-	if ($gitem = $DB->get_record('grade_items', array('courseid' => $course->id))) {
-		echo(' item TOTAL exist ='.$gitem->id);
-	}else {
-		echo(' item TOTAL NOT exist ');
-		die ("Need to create TOTAL grade first");
-		//create_grade_total($DB,$courseid)
+	$max_tries=1;
+	for ($try=1;$try<=$max_tries+1;$try++){
+		if ($gitem = $DB->get_record('grade_items', array('courseid' => $course->id))) {
+			echo(' item TOTAL exist ='.$gitem->id. ", grade max =".$gitem->grademax);
+			
+		}else {
+			echo(' item TOTAL NOT exist ');
+			
+			if($try<=$max_tries){
+				create_grade_total($DB,$course->id);
+				continue;
+			}else{
+				die ("CAN NOT create TOTAL grade ");
+			}
+		}
+		if($gitem->grademax<100){
+			echo " <font color=\"red\"> => course total 'grademax' not 100=>".$giteim->grademax."</font><br>";
+			die;
+		}
+		
 	}
 
 	//create course context first ... 
@@ -155,7 +171,10 @@ for ($c=1;$c<=$courseNumber;$c++){
 			 if($NIM==false) die ("error get NIM at".$coord);
 
 			 //getting userid
-
+			if (!$user = $DB->get_record('user', array('username' => trim($NIM->getValue()) ))) {
+				 echo " <font color=\"red\">NIM ". $NIM. "Not FOUND</font><br>";
+				die ();
+			}
 			 
 			 $point_col=$courseFullNameCol+$coursePointOffset;
 			 $coord=getNameFromNumber($point_col).$nim;
@@ -167,8 +186,8 @@ for ($c=1;$c<=$courseNumber;$c++){
 			 $letter=$spreadsheet->getActiveSheet()->getCell($coord); // reads D12 cell from second sheet
 			 if($point==false) die ("error get course name");
 			 $letter=$spreadsheet->getActiveSheet()->getCell($coord); // reads D12 cell from second sheet
-			 
-			 echo $NIM." ".$point." ".$letter."<BR>";
+			 $fullName=$user->firstname." ". $user->lastname;
+			 echo $NIM." ".$fullName." ".$point." ".$letter."<BR>";
 			 $point=floatval($point->getValue());
 			 
 			 
@@ -186,13 +205,16 @@ for ($c=1;$c<=$courseNumber;$c++){
 				 echo " <font color=\"green\"> => LETTER already SAME</font><br>";
 				 
 			 }
-			 //getting userid
-			 //
 			 // $itemmodule, $iteminstance,$userid_or_ids=null;
-			 // $stgrades=grade_get_grades($courseid, "course", $itemmodule, $iteminstance, $userid_or_ids=null);
-
-			 //grade_update("course", $courseid, $itemtype, $itemmodule, $iteminstance, $itemnumber, $grades=NULL, $itemdetails=NULL) {
-    
+			 // $stgrades=grade_get_grades($course->id, "course", null, null, $user->id);
+			 // if(!$stgrades){
+				 // echo " <font color=\"red\"> => COURSE TOTAL NOT GRADED</font><br>";
+					// die;
+			 // }
+			 // var_dump($stgrades);
+			 // function grade_update($source, $courseid, $itemtype, $itemmodule, $iteminstance, $itemnumber, $grades=NULL, $itemdetails=NULL)
+			 // grade_update("course", $course->id, "course", null, null, null, $grades=NULL, null);
+			die;
 			 
 	} //eo. for ($nim=$nim_start;  $nim<=$nim_end; $nim++){
 	
