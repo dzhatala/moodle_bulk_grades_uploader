@@ -1,4 +1,5 @@
 <head>
+Content-type: text/html; charset=utf-8
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
 <meta http-equiv="Pragma" content="no-cache" />
 <meta http-equiv="Expires" content="0" />
@@ -10,7 +11,7 @@
 require_once '../config.php';
 require_once($CFG->libdir . '/gradelib.php'); //
 
-require_login();
+// require_sesskey(); //protect ajax submit
  
 require '/var/www/composer/vendor/autoload.php';//absolute values of composer installation...
 require './../grade/edit/tree/total_creator.php';
@@ -50,12 +51,14 @@ function getPointFromLetter($grade_letters,$cl){
 }
 
 
+require_login();
+
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 
 $inputFileType = 'Xls';
 $inputFileName='/var/www/composer/sem2grades.xls';
-$inputFileName='/var/www/composer/testgrades.xls';
+// $inputFileName='/var/www/composer/testgrades.xls';
 
 // Create a new Reader of the type defined in $inputFileType
 $reader = IOFactory::createReader($inputFileType);
@@ -87,16 +90,16 @@ $coursePointOffset=1;
 
 
 
-// $course_prefix ="22_23"; //moodle course shortname prefix
+$course_prefix ="22_23"; //moodle course shortname prefix
 $course_prefix =""; //moodle course shortname prefix
 
 
 $courseNumber=11;
-$courseNumber=1; //column number in excel contain courses
+// $courseNumber=1; //column number in excel contain courses
 $nim_col='C';   // NIM column
 $nim_start=10; //excel row number start looking NIM
 $nim_end=96;
-$nim_end=11; //excel row number end looking NIM
+// $nim_end=11; //excel row number end looking NIM
 $currentuser='2';
 for ($c=1;$c<=$courseNumber;$c++){
 	
@@ -131,6 +134,8 @@ for ($c=1;$c<=$courseNumber;$c++){
 	$max_tries=1;
 	$gitem=false;
 	for ($try=1;$try<=$max_tries+1;$try++){
+		ob_flush();flush();
+		
 		if ($gitem = $DB->get_record('grade_items', array('courseid' => $course->id))) {
 			echo(' item TOTAL exist ='.$gitem->id. ", grade max =".$gitem->grademax);
 			break;
